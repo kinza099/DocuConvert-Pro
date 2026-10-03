@@ -1,0 +1,51 @@
+# ── PyInstaller build artifacts ───────────────────────────────────────────────
+build/
+dist/
+*.spec.bak
+
+# ── Python cache ──────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# ── Virtual environments ───────────────────────────────────────────────────────
+venv/
+env/
+.venv/
+.env/
+
+# ── User data (uploads & generated files) ─────────────────────────────────────
+uploads/
+outputs/
+*.pdf
+*.docx
+*.doc
+*.zip
+
+# ── Environment / secrets ─────────────────────────────────────────────────────
+.env
+*.env
+config.local.py
+
+# ── IDE / OS files ────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Database ──────────────────────────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Windows shortcut ──────────────────────────────────────────────────────────
+*.lnk

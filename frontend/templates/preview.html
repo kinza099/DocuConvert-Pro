@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}PDF Preview — DocuConvert Pro{% endblock %}
+
+{% block content %}
+<div class="flex flex-col h-[calc(100vh-4rem)]">
+
+  <!-- ─────────── UPLOAD OVERLAY (shown initially) ──────────── -->
+  <div id="uploadOverlay" class="flex-1 flex items-center justify-center bg-slate-50 p-6">
+    <div class="w-full max-w-xl text-center">
+
+      <div class="mx-auto w-20 h-20 rounded-2xl bg-indigo-100 flex items-center justify-center mb-6 shadow-inner">
+        <i data-lucide="eye" class="w-10 h-10 text-indigo-600"></i>
+      </div>
+      <h1 class="text-3xl font-bold text-slate-900 mb-2">PDF Preview</h1>
+      <p class="text-slate-500 mb-8">Upload a PDF to view, navigate, zoom and inspect pages — no editing required.</p>
+
+      <!-- Drop zone -->
+      <div id="dropZone"
+           class="border-2 border-dashed border-indigo-300 rounded-2xl bg-white hover:bg-indigo-50 hover:border-indigo-500 transition-all duration-200 cursor-pointer p-10 group"
+           onclick="document.getElementById('pdfFileInput').click()">
+        <i data-lucide="upload-cloud" class="w-12 h-12 mx-auto text-slate-400 group-hover:text-indigo-500 transition-colors mb-4"></i>
+        <p class="text-slate-700 font-semibold mb-1">Drag &amp; drop a PDF here, or <span class="text-indigo-600 underline">browse</span></p>
+        <p class="text-xs text-slate-400">PDF files only · Max 150 MB</p>
+      </div>
+      <input type="file" id="pdfFileInput" class="hidden" accept=".pdf,application/pdf">
+
+      <!-- Error box -->
+      <div id="uploadError" class="hidden mt-4 text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-4 py-3 text-left"></div>
+    </div>
+  </div>
+
+  <!-- ─────────── VIEWER SHELL (hidden until PDF loaded) ────── -->
+  <div id="viewerShell" class="hidden flex-1 flex flex-col overflow-hidden">
+
+    <!-- Top toolbar -->
+    <div class="bg-white border-b border-slate-200 px-4 py-2 flex items-center justify-between gap-3 flex-wrap shadow-sm">
+
+      <!-- Left: file info -->
+      <div class="flex items-center space-x-3 min-w-0">
+        <button id="backBtn" title="Back to upload"
+                class="flex items-center space-x-1 text-sm text-slate-600 hover:text-indigo-600 hover:bg-slate-100 rounded-lg px-2 py-1.5 transition-colors">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">Back</span>
+        </button>
+        <div class="w-px h-5 bg-slate-200"></div>
+        <i data-lucide="file-text" class="w-4 h-4 text-red-500 flex-shrink-0"></i>
+        <span id="fileNameLabel" class="text-sm font-medium text-slate-800 truncate max-w-[180px]">—</span>
+        <span id="fileSizeLabel" class="text-xs text-slate-400 hidden sm:inline">—</span>
+      </div>
+
+      <!-- Center: page navigation -->
+      <div class="flex items-center space-x-2">
+        <button id="firstPageBtn" title="First page" class="toolbar-nav-btn"><i data-lucide="chevrons-left" class="w-4 h-4"></i></button>
+        <button id="prevPageBtn"  title="Previous page" class="toolbar-nav-btn"><i data-lucide="chevron-left"  class="w-4 h-4"></i></button>
+        <div class="flex items-center space-x-1 text-sm">
+          <input id="currentPageInput" type="number" min="1" value="1"
+                 class="w-12 text-center border border-slate-300 rounded-md py-0.5 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+          <span class="text-slate-400">/</span>
+          <span id="totalPagesLabel" class="font-medium text-slate-700">—</span>
+        </div>
+        <button id="nextPageBtn"  title="Next page"     class="toolbar-nav-btn"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+        <button id="lastPageBtn"  title="Last page"     class="toolbar-nav-btn"><i data-lucide="chevrons-right" class="w-4 h-4"></i></button>
+      </div>
+
+      <!-- Right: zoom + view controls -->
+      <div class="flex items-center space-x-1.5">
+        <button id="zoomOutBtn"    title="Zoom out"   class="toolbar-nav-btn"><i data-lucide="zoom-out"  class="w-4 h-4"></i></button>
+        <select id="zoomSelect" class="text-sm border border-slate-300 rounded-md px-2 py-1 focus:ring-indigo-500 focus:border-indigo-500 cursor-pointer">
+          <option value="auto">Auto Fit</option>
+          <option value="page-width">Page Width</option>
+          <option value="0.5">50%</option>
+          <option value="0.75">75%</option>
+          <option value="1" selected>100%</option>
+          <option value="1.25">125%</option>
+          <option value="1.5">150%</option>
+          <option value="2">200%</option>
+        </select>
+        <button id="zoomInBtn"     title="Zoom in"    class="toolbar-nav-btn"><i data-lucide="zoom-in"   class="w-4 h-4"></i></button>
+        <div class="w-px h-5 bg-slate-200"></div>
+        <button id="rotateCWBtn"   title="Rotate clockwise"        class="toolbar-nav-btn"><i data-lucide="rotate-cw"  class="w-4 h-4"></i></button>
+        <button id="rotateCCWBtn"  title="Rotate counter-clockwise" class="toolbar-nav-btn"><i data-lucide="rotate-ccw" class="w-4 h-4"></i></button>
+        <div class="w-px h-5 bg-slate-200"></div>
+        <button id="toggleThumbsBtn" title="Toggle thumbnail panel" class="toolbar-nav-btn">
+          <i data-lucide="layout-panel-left" class="w-4 h-4"></i>
+        </button>
+        <button id="fullscreenBtn" title="Fullscreen" class="toolbar-nav-btn"><i data-lucide="maximize-2" class="w-4 h-4"></i></button>
+        <div class="w-px h-5 bg-slate-200"></div>
+        <a id="downloadLink" href="#" download class="flex items-center space-x-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm">
+          <i data-lucide="download" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">Download</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Body: thumbnails + canvas area -->
+    <div class="flex flex-1 overflow-hidden">
+
+      <!-- Thumbnail sidebar -->
+      <aside id="thumbSidebar" class="w-36 flex-shrink-0 bg-slate-100 border-r border-slate-200 overflow-y-auto py-3 space-y-2 px-2 transition-all duration-200">
+        <div id="thumbContainer" class="space-y-2"></div>
+      </aside>
+
+      <!-- Canvas wrapper -->
+      <div id="canvasArea" class="flex-1 overflow-auto bg-slate-700 flex items-start justify-center p-6">
+        <div id="canvasWrapper" class="bg-white shadow-2xl rounded-sm overflow-hidden relative">
+          <canvas id="pdfCanvas"></canvas>
+          <!-- Loading spinner overlay -->
+          <div id="pageLoadingSpinner" class="absolute inset-0 flex items-center justify-center bg-white/70 hidden">
+            <div class="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Info panel (right, toggleable) -->
+      <aside id="infoPanel" class="hidden w-56 flex-shrink-0 bg-white border-l border-slate-200 overflow-y-auto p-4 text-sm">
+        <h3 class="font-semibold text-slate-800 mb-3 flex items-center space-x-1.5">
+          <i data-lucide="info" class="w-4 h-4 text-indigo-500"></i>
+          <span>Document Info</span>
+        </h3>
+        <div id="metadataList" class="space-y-2 text-slate-600"></div>
+      </aside>
+    </div>
+
+    <!-- Bottom status bar -->
+    <div class="bg-slate-800 text-white text-xs px-4 py-1.5 flex items-center justify-between">
+      <span id="statusBar">Ready</span>
+      <div class="flex items-center space-x-4">
+        <span id="zoomLabel">100%</span>
+        <span id="rotateLabel">0°</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/preview.js"></script>
+{% endblock %}

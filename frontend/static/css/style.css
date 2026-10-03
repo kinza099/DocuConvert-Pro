@@ -1,0 +1,69 @@
+/* Custom animations & fine styling for DocuConvert Pro */
+
+.dropzone-active {
+    border-color: #6366f1 !important;
+    background-color: #eef2ff !important;
+    transform: scale(1.01);
+}
+
+.dark .dropzone-active {
+    border-color: #818cf8 !important;
+    background-color: rgba(99, 102, 241, 0.15) !important;
+}
+
+.transition-all-custom {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Scrollbar customization - Light & Dark */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+.dark ::-webkit-scrollbar-track {
+    background: #0f172a;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+}
+.dark ::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+}
+
+/* Ghost state for sortable elements */
+.sortable-ghost {
+    opacity: 0.4;
+    background-color: #e0e7ff !important;
+    border: 2px dashed #4f46e5 !important;
+}
+.dark .sortable-ghost {
+    background-color: #1e1b4b !important;
+    border: 2px dashed #818cf8 !important;
+}
+
+.sortable-chosen {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+/* Tool card hover elevation */
+.tool-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.tool-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.08), 0 4px 8px -4px rgba(0, 0, 0, 0.04);
+}
+.dark .tool-card:hover {
+    box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.4), 0 4px 8px -4px rgba(0, 0, 0, 0.2);
+}

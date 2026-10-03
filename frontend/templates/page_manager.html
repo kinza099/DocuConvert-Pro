@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}PDF Page Manager — DocuConvert Pro{% endblock %}
+
+{% block content %}
+<div class="flex flex-col min-h-[calc(100vh-4rem)]">
+
+  <!-- ───── UPLOAD SECTION ───── -->
+  <div id="uploadSection" class="flex-1 flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-6 transition-colors duration-200">
+    <div class="w-full max-w-xl text-center">
+
+      <div class="mx-auto w-20 h-20 rounded-2xl bg-violet-100 dark:bg-violet-950/60 flex items-center justify-center mb-6 shadow-inner">
+        <i data-lucide="layout-grid" class="w-10 h-10 text-violet-600 dark:text-violet-400"></i>
+      </div>
+      <h1 class="text-3xl font-bold text-slate-900 dark:text-white mb-2">PDF Page Manager</h1>
+      <p class="text-slate-500 dark:text-slate-400 mb-8">Visually reorder, rotate, duplicate or delete pages — then save a new PDF with your changes.</p>
+
+      <div id="pmDropZone"
+           class="border-2 border-dashed border-violet-300 dark:border-violet-800 rounded-2xl bg-white dark:bg-slate-900 hover:bg-violet-50 dark:hover:bg-violet-950/20 hover:border-violet-500 dark:hover:border-violet-500 transition-all duration-200 cursor-pointer p-10 group"
+           onclick="document.getElementById('pmFileInput').click()">
+        <i data-lucide="upload-cloud" class="w-12 h-12 mx-auto text-slate-400 dark:text-slate-500 group-hover:text-violet-500 dark:group-hover:text-violet-400 transition-colors mb-4"></i>
+        <p class="text-slate-700 dark:text-slate-200 font-semibold mb-1">Drag &amp; drop a PDF here, or <span class="text-violet-600 dark:text-violet-400 underline">browse</span></p>
+        <p class="text-xs text-slate-400 dark:text-slate-500">PDF files only · Max 150 MB</p>
+      </div>
+      <input type="file" id="pmFileInput" class="hidden" accept=".pdf,application/pdf">
+
+      <div id="pmUploadError" class="hidden mt-4 text-sm text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 rounded-lg px-4 py-3 text-left"></div>
+    </div>
+  </div>
+
+  <!-- ───── MANAGER SHELL (shown once pages load) ───── -->
+  <div id="managerShell" class="hidden flex-col flex-1">
+
+    <!-- Toolbar -->
+    <div class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3 flex flex-wrap items-center justify-between gap-3 shadow-sm sticky top-16 z-10 transition-colors duration-200">
+      <!-- Left: back + file name -->
+      <div class="flex items-center space-x-3 min-w-0">
+        <button id="pmBackBtn" class="flex items-center space-x-1 text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg px-2 py-1.5 transition-colors">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">New File</span>
+        </button>
+        <div class="w-px h-5 bg-slate-200 dark:bg-slate-800"></div>
+        <i data-lucide="file-text" class="w-4 h-4 text-red-500 flex-shrink-0"></i>
+        <span id="pmFileName" class="text-sm font-medium text-slate-800 dark:text-slate-200 truncate max-w-[200px]">—</span>
+        <span id="pmPageCount" class="text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full font-medium">0 pages</span>
+      </div>
+
+      <!-- Center: selection info -->
+      <div class="flex items-center space-x-2 text-sm text-slate-500 dark:text-slate-400" id="selectionBar">
+        <span id="selectedCount">0 selected</span>
+        <div class="flex items-center space-x-1" id="selectionActions">
+          <button id="rotateSelCWBtn"  title="Rotate selected CW"  class="pm-tool-btn text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400"><i data-lucide="rotate-cw" class="w-4 h-4"></i></button>
+          <button id="rotateSelCCWBtn" title="Rotate selected CCW" class="pm-tool-btn text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400"><i data-lucide="rotate-ccw" class="w-4 h-4"></i></button>
+          <button id="duplicateSelBtn" title="Duplicate selected"   class="pm-tool-btn text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400"><i data-lucide="copy" class="w-4 h-4"></i></button>
+          <button id="extractSelBtn"   title="Extract selected"     class="pm-tool-btn text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400"><i data-lucide="scissors" class="w-4 h-4"></i></button>
+          <button id="deleteSelBtn"    title="Delete selected"      class="pm-tool-btn text-rose-500 dark:text-rose-400"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+        </div>
+      </div>
+
+      <!-- Right: global actions -->
+      <div class="flex items-center space-x-2">
+        <button id="selectAllBtn" class="text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+          Select All
+        </button>
+        <button id="deselectAllBtn" class="text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+          Deselect
+        </button>
+        <div class="w-px h-5 bg-slate-200 dark:bg-slate-800"></div>
+        <button id="pmUndoBtn" title="Undo" class="pm-tool-btn text-slate-600 dark:text-slate-300 disabled:opacity-30" disabled><i data-lucide="undo-2" class="w-4 h-4"></i></button>
+        <button id="pmRedoBtn" title="Redo" class="pm-tool-btn text-slate-600 dark:text-slate-300 disabled:opacity-30" disabled><i data-lucide="redo-2" class="w-4 h-4"></i></button>
+        <div class="w-px h-5 bg-slate-200 dark:bg-slate-800"></div>
+        <button id="saveChangesBtn"
+                class="inline-flex items-center space-x-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors">
+          <i data-lucide="save" class="w-4 h-4"></i>
+          <span>Save &amp; Download</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Page grid -->
+    <div class="flex-1 overflow-auto bg-slate-100 dark:bg-slate-950 p-6 transition-colors duration-200">
+
+      <!-- Loading spinner -->
+      <div id="pmLoadingSpinner" class="flex flex-col items-center justify-center py-24 text-slate-400 dark:text-slate-500">
+        <div class="w-12 h-12 border-4 border-violet-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p class="text-sm font-medium">Generating page thumbnails…</p>
+      </div>
+
+      <!-- Empty state -->
+      <div id="pmEmptyState" class="hidden flex flex-col items-center justify-center py-24 text-slate-400 dark:text-slate-500">
+        <i data-lucide="layers" class="w-12 h-12 mb-3 text-slate-300 dark:text-slate-600"></i>
+        <p class="text-sm">No pages found in this PDF.</p>
+      </div>
+
+      <!-- Sortable grid -->
+      <div id="pageGrid"
+           class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 hidden">
+      </div>
+    </div>
+
+    <!-- Bottom status bar -->
+    <div class="bg-slate-800 dark:bg-slate-900 text-white text-xs px-4 py-2 flex items-center justify-between border-t border-slate-700 dark:border-slate-800">
+      <span id="pmStatus">Ready — drag pages to reorder</span>
+      <span id="pmChangesLabel" class="text-amber-400 hidden">⚠ Unsaved changes</span>
+    </div>
+  </div>
+
+  <!-- ───── RESULT PANEL ───── -->
+  <div id="resultPanel" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md p-8 text-center border border-slate-200 dark:border-slate-800 transition-colors duration-200">
+      <div class="w-16 h-16 mx-auto rounded-full bg-emerald-100 dark:bg-emerald-950/60 flex items-center justify-center mb-4 text-emerald-600 dark:text-emerald-400">
+        <i data-lucide="check-circle" class="w-8 h-8"></i>
+      </div>
+      <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-1">PDF Saved!</h2>
+      <p class="text-slate-500 dark:text-slate-400 text-sm mb-6" id="resultDetails">Your reorganized PDF is ready to download.</p>
+      <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <a id="resultDownloadBtn" href="#" download
+           class="inline-flex items-center justify-center space-x-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-700 text-white font-semibold rounded-xl transition-colors">
+          <i data-lucide="download" class="w-4 h-4"></i>
+          <span>Download PDF</span>
+        </a>
+        <button id="resultCloseBtn"
+                class="px-5 py-2.5 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+          Continue Editing
+        </button>
+        <button id="resultNewBtn"
+                class="px-5 py-2.5 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+          Open New PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/page_manager.js"></script>
+{% endblock %}

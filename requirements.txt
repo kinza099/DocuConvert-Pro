@@ -1,0 +1,22 @@
+# DocuConvert Pro — Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# ── Web Framework ──────────────────────────────────────────────────────────
+Flask>=3.0.0
+Flask-Cors>=4.0.0
+Werkzeug>=3.0.0
+
+# ── PDF Processing (core) ──────────────────────────────────────────────────
+PyMuPDF>=1.23.0        # pymupdf — render, edit, compress, merge/split PDFs
+pypdf>=4.0.0           # pure-Python PDF reader (fallback utilities)
+
+# ── PDF ↔ Word Conversion ─────────────────────────────────────────────────
+pdf2docx>=0.5.8        # High-quality PDF → DOCX conversion
+python-docx>=1.1.0     # Read/write .docx files
+docx2pdf>=0.1.8        # Word → PDF on Windows via MS Word COM (optional but preferred)
+
+# ── Report / Document Generation ──────────────────────────────────────────
+reportlab>=4.1.0       # Pure-Python PDF generation (Word→PDF fallback)
+
+# ── Image Processing ───────────────────────────────────────────────────────
+Pillow>=10.0.0         # Image handling (used internally by PyMuPDF / pdf2docx)

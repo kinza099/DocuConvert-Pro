@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Editor Studio - DocuConvert Pro</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Inter:wght@400;500;600;700&family=Playfair+Display:ital@1&family=Roboto+Mono&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Fabric.js CDN (Interactive Canvas engine) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <!-- PDF.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="bg-slate-900 text-slate-100 h-full flex flex-col font-sans select-none overflow-hidden">
+
+    <!-- Top Navigation & Action Bar -->
+    <header class="h-14 bg-slate-950 border-b border-slate-800 flex items-center justify-between px-4 z-30 flex-shrink-0">
+        <!-- Left: Brand & File Name -->
+        <div class="flex items-center space-x-3">
+            <a href="/" class="flex items-center space-x-2 text-slate-400 hover:text-white transition-colors" title="Back to Dashboard">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </a>
+            <div class="h-5 w-px bg-slate-800"></div>
+            <div class="flex items-center space-x-2">
+                <div class="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white">
+                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                </div>
+                <span class="font-bold text-sm tracking-tight text-white hidden sm:inline">PDF Editor</span>
+                <span id="currentPdfName" class="text-xs text-slate-400 font-mono max-w-[200px] truncate">No Document Loaded</span>
+            </div>
+        </div>
+
+        <!-- Center: Zoom & Page Controls -->
+        <div class="flex items-center space-x-1 sm:space-x-2 bg-slate-900 p-1 rounded-xl border border-slate-800">
+            <button id="prevPageBtn" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-40" title="Previous Page">
+                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+            </button>
+            <div class="flex items-center space-x-1 text-xs font-semibold px-2 text-slate-300">
+                <span id="currentPageNum">1</span>
+                <span class="text-slate-500">/</span>
+                <span id="totalPagesNum">1</span>
+            </div>
+            <button id="nextPageBtn" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-40" title="Next Page">
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </button>
+
+            <div class="h-4 w-px bg-slate-800 mx-1"></div>
+
+            <button id="zoomOutBtn" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800" title="Zoom Out">
+                <i data-lucide="zoom-out" class="w-4 h-4"></i>
+            </button>
+            <span id="zoomLevelDisplay" class="text-xs text-slate-400 font-mono w-10 text-center">100%</span>
+            <button id="zoomInBtn" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800" title="Zoom In">
+                <i data-lucide="zoom-in" class="w-4 h-4"></i>
+            </button>
+            <button id="fitWidthBtn" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 hidden md:inline-flex" title="Fit to Screen">
+                <i data-lucide="maximize-2" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <!-- Right: Undo, Redo, Save, Export -->
+        <div class="flex items-center space-x-2">
+            <button id="undoBtn" class="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30" title="Undo (Ctrl+Z)">
+                <i data-lucide="undo-2" class="w-4 h-4"></i>
+            </button>
+            <button id="redoBtn" class="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30" title="Redo (Ctrl+Y)">
+                <i data-lucide="redo-2" class="w-4 h-4"></i>
+            </button>
+
+            <div class="h-5 w-px bg-slate-800 mx-1"></div>
+
+            <button id="saveAndExportBtn" class="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow hover:shadow-md transition-all flex items-center space-x-1.5">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span>Download PDF</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Secondary Interactive Tool Palette -->
+    <div class="h-12 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 z-20 overflow-x-auto">
+        <div class="flex items-center space-x-1">
+            <button id="toolSelect" class="tool-btn active-tool px-3 py-1.5 rounded-lg text-xs font-medium flex items-center space-x-1.5 bg-indigo-600 text-white" title="Select & Move Objects">
+                <i data-lucide="mouse-pointer" class="w-3.5 h-3.5"></i>
+                <span class="hidden sm:inline">Select</span>
+            </button>
+            <button id="toolText" class="tool-btn px-3 py-1.5 rounded-lg text-xs font-medium flex items-center space-x-1.5 text-slate-400 hover:text-white hover:bg-slate-800" title="Add Text Box">
+                <i data-lucide="type" class="w-3.5 h-3.5"></i>
+                <span>Text</span>
+            </button>
+            <button id="toolDraw" class="tool-btn px-3 py-1.5 rounded-lg text-xs font-medium flex items-center space-x-1.5 text-slate-400 hover:text-white hover:bg-slate-800" title="Freehand Pen">
+                <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                <span>Draw</span>
+            </button>
+            <button id="toolHighlight" class="tool-btn px-3 py-1.5 rounded-lg text-xs font-medium flex items-center space-x-1.5 text-slate-400 hover:text-white hover:bg-slate-800" title="Highlighter">
+                <i data-lucide="highlighter" class="w-3.5 h-3.5"></i>
+                <span>Highlight</span>
+            </button>
+
+            <!-- Shapes Dropdown / Buttons -->
+            <div class="flex items-center space-x-1 bg-slate-950/60 p-1 rounded-lg border border-slate-800">
+                <button id="toolRect" class="tool-btn p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-800" title="Rectangle">
+                    <i data-lucide="square" class="w-3.5 h-3.5"></i>
+                </button>
+                <button id="toolCircle" class="tool-btn p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-800" title="Circle">
+                    <i data-lucide="circle" class="w-3.5 h-3.5"></i>
+                </button>
+                <button id="toolLine" class="tool-btn p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-800" title="Line">
+                    <i data-lucide="minus" class="w-3.5 h-3.5"></i>
+                </button>
+                <button id="toolArrow" class="tool-btn p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-800" title="Arrow">
+                    <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
+                </button>
+            </div>
+
+            <!-- Whiteout & Redaction Tools -->
+            <button id="toolWhiteout" class="tool-btn px-3 py-1.5 rounded-lg text-xs font-medium flex items-center space-x-1.5 text-slate-400 hover:text-white hover:bg-slate-800" title="Whiteout (Cover Area)">
+                <i data-lucide="eraser" class="w-3.5 h-3.5 text-slate-300"></i>
+                <span>Whiteout</span>
+            </button>
+            <button id="toolRedaction" class="tool-btn px-3 py-1.5 rounded-lg text-xs font-medium flex items-center space-x-1.5 text-slate-400 hover:text-white hover:bg-slate-800" title="Permanent Redaction (Erases Underlying Content)">
+                <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-rose-400"></i>
+                <span class="text-rose-300">Redact</span>
+            </button>
+
+            <!-- Image & Signature -->
+            <button id="toolImage" class="tool-btn px-3 py-1.5 rounded-lg text-xs font-medium flex items-center space-x-1.5 text-slate-400 hover:text-white hover:bg-slate-800" title="Add Image">
+                <i data-lucide="image" class="w-3.5 h-3.5"></i>
+                <span>Image</span>
+            </button>
+            <input type="file" id="imageInputHidden" accept="image/*" class="hidden">
+
+            <button id="toolSignature" class="tool-btn px-3 py-1.5 rounded-lg text-xs font-medium flex items-center space-x-1.5 text-slate-400 hover:text-white hover:bg-slate-800" title="Add Signature">
+                <i data-lucide="signature" class="w-3.5 h-3.5 text-amber-400"></i>
+                <span>Sign PDF</span>
+            </button>
+        </div>
+
+        <!-- Object Actions (Delete object, bring forward, etc.) -->
+        <div class="flex items-center space-x-1" id="activeObjectActions">
+            <button id="deleteObjectBtn" class="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition-colors hidden" title="Delete Selected Object">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Dynamic Context / Formatting Bar (Appears when Text or Draw is active) -->
+    <div id="formattingBar" class="h-11 bg-slate-950 border-b border-slate-800 flex items-center px-4 space-x-3 text-xs text-slate-300 overflow-x-auto">
+        <!-- Text Formatting Controls -->
+        <div id="textFormattingControls" class="flex items-center space-x-2">
+            <select id="fontFamilySelect" class="bg-slate-900 border-slate-700 text-xs rounded-lg py-1 px-2 text-white">
+                <option value="Inter">Inter</option>
+                <option value="Helvetica">Helvetica</option>
+                <option value="Times New Roman">Times New Roman</option>
+                <option value="Courier New">Courier New</option>
+                <option value="Caveat">Cursive (Caveat)</option>
+                <option value="Playfair Display">Playfair Serif</option>
+            </select>
+
+            <select id="fontSizeSelect" class="bg-slate-900 border-slate-700 text-xs rounded-lg py-1 px-2 text-white">
+                <option value="12">12 pt</option>
+                <option value="14">14 pt</option>
+                <option value="16" selected>16 pt</option>
+                <option value="20">20 pt</option>
+                <option value="24">24 pt</option>
+                <option value="32">32 pt</option>
+                <option value="48">48 pt</option>
+            </select>
+
+            <button id="boldBtn" class="p-1 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 font-bold px-2">B</button>
+            <button id="italicBtn" class="p-1 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 italic px-2">I</button>
+            <button id="underlineBtn" class="p-1 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 underline px-2">U</button>
+
+            <div class="flex items-center space-x-1 pl-2">
+                <span class="text-slate-500">Color:</span>
+                <input type="color" id="textColorPicker" value="#000000" class="w-6 h-6 rounded border-0 cursor-pointer bg-transparent">
+            </div>
+        </div>
+
+        <!-- Draw / Stroke Controls -->
+        <div id="drawFormattingControls" class="flex items-center space-x-3 hidden">
+            <div class="flex items-center space-x-1">
+                <span class="text-slate-500">Brush:</span>
+                <input type="range" id="brushSizeSlider" min="1" max="40" value="3" class="w-20 accent-indigo-500">
+                <span id="brushSizeDisplay" class="font-mono text-[10px] w-6">3px</span>
+            </div>
+            <div class="flex items-center space-x-1">
+                <span class="text-slate-500">Color:</span>
+                <input type="color" id="brushColorPicker" value="#ef4444" class="w-6 h-6 rounded border-0 cursor-pointer bg-transparent">
+            </div>
+            <div class="flex items-center space-x-1">
+                <span class="text-slate-500">Opacity:</span>
+                <input type="range" id="opacitySlider" min="0.1" max="1" step="0.05" value="1" class="w-16 accent-indigo-500">
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Workspace Body -->
+    <div class="flex-1 flex overflow-hidden relative">
+
+        <!-- Left Page Thumbnail Sidebar -->
+        <aside id="editorSidebar" class="w-48 bg-slate-950 border-r border-slate-800 flex flex-col z-10 flex-shrink-0">
+            <div class="p-3 border-b border-slate-800 flex items-center justify-between text-xs font-semibold text-slate-400">
+                <span>Pages</span>
+                <span id="sidebarPageCount">0 pages</span>
+            </div>
+            <div id="sidebarThumbnails" class="flex-1 overflow-y-auto p-3 space-y-3"></div>
+        </aside>
+
+        <!-- Center Canvas Workspace Area -->
+        <main class="flex-1 overflow-auto bg-slate-900/90 flex items-center justify-center p-8 relative" id="canvasViewport">
+            <!-- Empty state when no PDF is loaded yet -->
+            <div id="emptyEditorState" class="text-center space-y-4 max-w-md p-8 border-2 border-dashed border-slate-700 rounded-3xl bg-slate-950/50">
+                <div class="w-16 h-16 mx-auto rounded-2xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center">
+                    <i data-lucide="file-plus" class="w-8 h-8"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Open a PDF to Edit</h3>
+                    <p class="text-xs text-slate-400 mt-1">Select a PDF file from your device to begin adding text, drawings, signatures, and shapes.</p>
+                </div>
+                <input type="file" id="editorFileInput" accept=".pdf" class="hidden">
+                <button onclick="document.getElementById('editorFileInput').click()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition-all">
+                    Choose PDF Document
+                </button>
+            </div>
+
+            <!-- Active Interactive Canvas Wrapper -->
+            <div id="canvasContainerWrapper" class="relative hidden editor-canvas-wrapper bg-white">
+                <!-- Underneath: PDF page rendered onto canvas -->
+                <canvas id="pdfBackgroundCanvas" class="absolute top-0 left-0 pointer-events-none"></canvas>
+                <!-- On top: Fabric.js interactive editing canvas -->
+                <canvas id="fabricCanvas" class="relative"></canvas>
+            </div>
+        </main>
+    </div>
+
+    <!-- Signature Creation Modal -->
+    <div id="signatureModal" class="fixed inset-0 z-50 overflow-y-auto hidden" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm" onclick="closeSignatureModal()"></div>
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl p-6 space-y-5 text-white">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h3 class="text-base font-bold flex items-center space-x-2">
+                        <i data-lucide="signature" class="w-5 h-5 text-amber-400"></i>
+                        <span>Create Your Signature</span>
+                    </h3>
+                    <button onclick="closeSignatureModal()" class="text-slate-400 hover:text-white p-1">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <!-- Tabs: Draw, Type, Upload -->
+                <div class="flex border-b border-slate-800 text-xs font-semibold">
+                    <button id="sigTabDraw" onclick="setSigTab('draw')" class="px-4 py-2 text-indigo-400 border-b-2 border-indigo-500">Draw</button>
+                    <button id="sigTabType" onclick="setSigTab('type')" class="px-4 py-2 text-slate-400 hover:text-white">Type</button>
+                    <button id="sigTabUpload" onclick="setSigTab('upload')" class="px-4 py-2 text-slate-400 hover:text-white">Upload</button>
+                </div>
+
+                <!-- Draw Signature Tab -->
+                <div id="sigPanelDraw" class="space-y-3">
+                    <div class="bg-white rounded-2xl p-1 border-2 border-slate-700">
+                        <canvas id="sigPadCanvas" width="450" height="160" class="cursor-crosshair w-full rounded-xl bg-white"></canvas>
+                    </div>
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-slate-400">Draw your signature with mouse or touch</span>
+                        <button onclick="clearSigPad()" class="text-rose-400 hover:text-rose-300">Clear</button>
+                    </div>
+                </div>
+
+                <!-- Type Signature Tab -->
+                <div id="sigPanelType" class="space-y-3 hidden">
+                    <input type="text" id="sigTypeInput" placeholder="Type your full name..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:border-indigo-500">
+                    <div class="p-4 bg-white rounded-2xl text-slate-900 text-center min-h-[100px] flex items-center justify-center">
+                        <span id="sigTypePreview" class="text-3xl font-signature-1">Your Signature</span>
+                    </div>
+                </div>
+
+                <!-- Upload Signature Tab -->
+                <div id="sigPanelUpload" class="space-y-3 hidden">
+                    <div class="border-2 border-dashed border-slate-700 rounded-2xl p-6 text-center cursor-pointer hover:border-indigo-500" onclick="document.getElementById('sigImageFile').click()">
+                        <i data-lucide="upload" class="w-8 h-8 mx-auto text-slate-400 mb-2"></i>
+                        <p class="text-xs text-slate-300">Click to upload signature image (PNG, JPG)</p>
+                        <input type="file" id="sigImageFile" accept="image/*" class="hidden">
+                    </div>
+                </div>
+
+                <!-- Modal Actions -->
+                <div class="flex justify-end space-x-2 pt-2 border-t border-slate-800">
+                    <button onclick="closeSignatureModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white">Cancel</button>
+                    <button onclick="applySignatureToCanvas()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs">Insert Signature</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast Container -->
+    <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col space-y-2 pointer-events-none max-w-sm w-full"></div>
+
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/pdf-editor.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
